@@ -10,8 +10,26 @@ import {
   Palette, 
   Code,
   ChevronLeft,
-  Brain
+  Brain,
+  Trash2,
+  MoreVertical
 } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
 import { useProjectStore } from "@/hooks/use-project-store"
 import { AIGenerationDialog } from "./ai-generation-dialog"
@@ -27,7 +45,8 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
     isOpen: boolean
     type: 'webpage' | 'component' | 'style' | 'script' | 'page-edit'
   }>({ isOpen: false, type: 'webpage' })
-  const { projects, currentProject, createProject, setCurrentProject } = useProjectStore()
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null)
+  const { projects, currentProject, createProject, setCurrentProject, deleteProject } = useProjectStore()
 
   const handleCreateProject = () => {
     const name = `Progetto ${projects.length + 1}`
@@ -40,6 +59,22 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
 
   const closeAiDialog = () => {
     setAiDialog({ isOpen: false, type: 'webpage' })
+  }
+
+  const handleDeleteProject = (projectId: string, projectName: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setProjectToDelete(projectId)
+  }
+
+  const confirmDeleteProject = () => {
+    if (projectToDelete) {
+      deleteProject(projectToDelete)
+      setProjectToDelete(null)
+    }
+  }
+
+  const cancelDeleteProject = () => {
+    setProjectToDelete(null)
   }
 
   return (
@@ -105,17 +140,45 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
               {projects.map((project) => (
                 <div
                   key={project.id}
-                  onClick={() => setCurrentProject(project)}
                   className={cn(
-                    "p-3 rounded-lg cursor-pointer transition-colors border",
+                    "group relative p-3 rounded-lg cursor-pointer transition-colors border",
                     currentProject?.id === project.id
                       ? "bg-primary/10 border-primary"
                       : "hover:bg-muted border-transparent"
                   )}
                 >
-                  <div className="font-medium text-sm">{project.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(project.updatedAt).toLocaleDateString('it-IT')}
+                  <div 
+                    onClick={() => setCurrentProject(project)}
+                    className="flex-1"
+                  >
+                    <div className="font-medium text-sm pr-8">{project.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(project.updatedAt).toLocaleDateString('it-IT')}
+                    </div>
+                  </div>
+                  
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={(e) => handleDeleteProject(project.id, project.name, e)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Elimina Progetto
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               ))}
@@ -208,6 +271,34 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
         onClose={closeAiDialog}
         type={aiDialog.type}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!projectToDelete} onOpenChange={() => setProjectToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Elimina Progetto</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare questo progetto? Questa azione non può essere annullata.
+              {projectToDelete && (
+                <span className="block mt-2 font-medium">
+                  "{projects.find(p => p.id === projectToDelete)?.name}"
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelDeleteProject}>
+              Annulla
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteProject}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 } 
