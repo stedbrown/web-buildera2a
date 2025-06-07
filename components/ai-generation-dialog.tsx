@@ -31,7 +31,7 @@ import toast from "react-hot-toast"
 interface AIGenerationDialogProps {
   isOpen: boolean
   onClose: () => void
-  type: 'webpage' | 'component' | 'style' | 'script'
+  type: 'webpage' | 'component' | 'style' | 'script' | 'page-edit'
 }
 
 const typeConfig = {
@@ -40,6 +40,12 @@ const typeConfig = {
     description: "Crea una pagina web completa con HTML, CSS e JavaScript",
     icon: Globe,
     placeholder: "Descrivi il tipo di pagina web che vuoi creare. Ad esempio: 'Un sito per un ristorante con menu, contatti e gallery di foto'"
+  },
+  'page-edit': {
+    title: "Modifica Pagina",
+    description: "Modifica l'intera pagina web con modifiche generali",
+    icon: Wand2,
+    placeholder: "Descrivi le modifiche che vuoi apportare alla pagina. Ad esempio: 'Aggiungi una sezione contatti', 'Cambia il colore theme a verde', 'Rendi il layout più responsive'"
   },
   component: {
     title: "Genera Componente",
@@ -125,12 +131,22 @@ export function AIGenerationDialog({ isOpen, onClose, type }: AIGenerationDialog
 
       await new Promise(resolve => setTimeout(resolve, 500))
 
-      // Apply the generated code
-      updateCurrentProjectCode(
-        result.html || undefined,
-        result.css || undefined,
-        result.javascript || undefined
-      )
+      // Apply the generated code intelligently
+      if (type === 'page-edit') {
+        // For page edits, only update the parts that were actually generated
+        updateCurrentProjectCode(
+          result.html || undefined,
+          result.css || undefined,
+          result.javascript || undefined
+        )
+      } else {
+        // For other types, update as before
+        updateCurrentProjectCode(
+          result.html || undefined,
+          result.css || undefined,
+          result.javascript || undefined
+        )
+      }
 
       // Step 4: Complete
       setProgress({

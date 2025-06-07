@@ -12,7 +12,7 @@ export interface Project {
 
 export interface AIGenerationRequest {
   prompt: string
-  type: 'webpage' | 'component' | 'style' | 'script'
+  type: 'webpage' | 'component' | 'style' | 'script' | 'page-edit'
   context?: {
     existingHtml?: string
     existingCss?: string

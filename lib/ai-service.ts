@@ -90,6 +90,22 @@ Quando scrivi JavaScript:
 
 Fornisci solo il codice JavaScript.`
 
+      case 'page-edit':
+        return `${basePrompt}
+        
+Quando modifichi una pagina web esistente:
+1. Analizza il codice HTML, CSS e JavaScript esistente
+2. Applica le modifiche richieste in modo intelligente
+3. Mantieni la coerenza del design esistente
+4. Modifica solo i file necessari per il cambiamento richiesto
+5. Assicurati che le modifiche siano responsive e accessibili
+6. Preserva le funzionalità esistenti a meno che non sia richiesto il contrario
+
+Fornisci i file modificati (HTML, CSS, JavaScript) solo se necessario per la modifica richiesta.
+Se la modifica riguarda solo gli stili, fornisci solo il CSS.
+Se la modifica riguarda solo la struttura, fornisci solo l'HTML.
+Se la modifica richiede nuove funzionalità, fornisci HTML, CSS e JavaScript.`
+
       default:
         return basePrompt
     }
@@ -163,6 +179,9 @@ Fornisci solo il codice JavaScript.`
     switch (request.type) {
       case 'webpage':
         return `Crea una pagina web completa basata su questa richiesta: "${request.prompt}"`
+      
+      case 'page-edit':
+        return `Modifica la pagina web esistente applicando questa modifica: "${request.prompt}"`
       
       case 'component':
         return `Crea un componente web per: "${request.prompt}"`

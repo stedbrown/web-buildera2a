@@ -25,7 +25,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   const [activeTab, setActiveTab] = useState<'projects' | 'ai-tools'>('projects')
   const [aiDialog, setAiDialog] = useState<{
     isOpen: boolean
-    type: 'webpage' | 'component' | 'style' | 'script'
+    type: 'webpage' | 'component' | 'style' | 'script' | 'page-edit'
   }>({ isOpen: false, type: 'webpage' })
   const { projects, currentProject, createProject, setCurrentProject } = useProjectStore()
 
@@ -34,7 +34,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
     createProject(name)
   }
 
-  const openAiDialog = (type: 'webpage' | 'component' | 'style' | 'script') => {
+  const openAiDialog = (type: 'webpage' | 'component' | 'style' | 'script' | 'page-edit') => {
     setAiDialog({ isOpen: true, type })
   }
 
@@ -145,34 +145,48 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
               </Button>
               
               <Button 
-                variant="outline" 
+                variant="default" 
                 className="w-full justify-start" 
                 size="sm"
-                onClick={() => openAiDialog('component')}
+                onClick={() => openAiDialog('page-edit')}
               >
-                <FileText className="h-4 w-4 mr-2" />
-                Modifica HTML
+                <Wand2 className="h-4 w-4 mr-2" />
+                Modifica Pagina
               </Button>
               
-              <Button 
-                variant="outline" 
-                className="w-full justify-start" 
-                size="sm"
-                onClick={() => openAiDialog('style')}
-              >
-                <Palette className="h-4 w-4 mr-2" />
-                Modifica CSS
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                className="w-full justify-start" 
-                size="sm"
-                onClick={() => openAiDialog('script')}
-              >
-                <Code className="h-4 w-4 mr-2" />
-                Modifica JavaScript
-              </Button>
+              <div className="border-t pt-2 mt-3">
+                <p className="text-xs text-muted-foreground mb-2 px-1">Modifica Specifica:</p>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start" 
+                  size="sm"
+                  onClick={() => openAiDialog('component')}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Modifica HTML
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start" 
+                  size="sm"
+                  onClick={() => openAiDialog('style')}
+                >
+                  <Palette className="h-4 w-4 mr-2" />
+                  Modifica CSS
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start" 
+                  size="sm"
+                  onClick={() => openAiDialog('script')}
+                >
+                  <Code className="h-4 w-4 mr-2" />
+                  Modifica JavaScript
+                </Button>
+              </div>
             </div>
             
             <div className="mt-6 p-3 bg-muted/50 rounded-lg">
