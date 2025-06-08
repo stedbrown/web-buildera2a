@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { AIGenerationRequest, AIGenerationResponse, OpenRouterMessage } from '@/types'
+import { AIGenerationRequest, AIGenerationResponse, OpenRouterMessage, Page } from '@/types'
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions'
 const MODEL_NAME = 'deepseek/deepseek-r1-distill-qwen-32b'
@@ -16,7 +16,7 @@ class AIService {
           model: MODEL_NAME,
           messages,
           temperature: 0.7,
-          max_tokens: 4000,
+          max_tokens: 6000, // Increased for multi-page generation
           stream: false,
         },
         {
@@ -53,6 +53,58 @@ Quando generi una pagina web completa:
 6. Includi meta tag appropriati
 
 Fornisci il codice in sezioni separate: HTML, CSS, e JavaScript.`
+
+      case 'multi-page-site':
+        return `${basePrompt}
+        
+Quando generi un sito web multi-pagina:
+1. Crea una struttura coerente con navigazione comune
+2. Usa CSS globale condiviso per layout e stili base
+3. Crea pagine specifiche con contenuti unici
+4. Assicurati della navigazione tra le pagine
+5. Mantieni un design coerente
+6. Usa slug URL appropriati per ogni pagina
+
+Fornisci:
+- HTML per ogni pagina richiesta
+- CSS globale condiviso
+- CSS specifico per ogni pagina (se necessario)
+- JavaScript globale condiviso
+- JavaScript specifico per ogni pagina (se necessario)
+
+Formato di risposta:
+\`\`\`global-css
+[CSS globale]
+\`\`\`
+
+\`\`\`global-js
+[JavaScript globale]
+\`\`\`
+
+Per ogni pagina:
+\`\`\`page-[slug]-html
+[HTML della pagina]
+\`\`\`
+
+\`\`\`page-[slug]-css
+[CSS specifico della pagina]
+\`\`\`
+
+\`\`\`page-[slug]-js
+[JavaScript specifico della pagina]
+\`\`\``
+
+      case 'new-page':
+        return `${basePrompt}
+        
+Quando crei una nuova pagina per un sito esistente:
+1. Mantieni la struttura di navigazione esistente
+2. Usa gli stili globali già definiti
+3. Crea contenuto specifico per la nuova pagina
+4. Assicurati della coerenza con il design esistente
+5. Aggiungi la nuova pagina alla navigazione
+
+Fornisci HTML, CSS specifico e JavaScript specifico per la nuova pagina.`
 
       case 'component':
         return `${basePrompt}
@@ -114,6 +166,10 @@ Se la modifica richiede nuove funzionalità, fornisci HTML, CSS e JavaScript.`
   private parseResponse(content: string, type: string): AIGenerationResponse {
     const response: AIGenerationResponse = {}
 
+    if (type === 'multi-page-site') {
+      return this.parseMultiPageResponse(content)
+    }
+
     // Extract HTML
     const htmlMatch = content.match(/```html\n([\s\S]*?)\n```/i)
     if (htmlMatch) {
@@ -155,6 +211,118 @@ Se la modifica richiede nuove funzionalità, fornisci HTML, CSS e JavaScript.`
     return response
   }
 
+  private parseMultiPageResponse(content: string): AIGenerationResponse {
+    const response: AIGenerationResponse = {
+      pages: []
+    }
+
+    // Extract global CSS
+    const globalCssMatch = content.match(/```global-css\n([\s\S]*?)\n```/i)
+    if (globalCssMatch) {
+      response.globalCss = globalCssMatch[1].trim()
+    }
+
+    // Extract global JS
+    const globalJsMatch = content.match(/```global-js\n([\s\S]*?)\n```/i)
+    if (globalJsMatch) {
+      response.globalJs = globalJsMatch[1].trim()
+    }
+
+    // Extract pages
+    const pageHtmlRegex = /```page-([^-\n]+)-html\n([\s\S]*?)\n```/gi
+    let match
+    while ((match = pageHtmlRegex.exec(content)) !== null) {
+      const slug = match[1].trim()
+      const html = match[2].trim()
+      
+      // Find corresponding CSS and JS for this page
+      const pageCssRegex = new RegExp(`\`\`\`page-${slug}-css\\n([\\s\\S]*?)\\n\`\`\``, 'i')
+      const pageJsRegex = new RegExp(`\`\`\`page-${slug}-js\\n([\\s\\S]*?)\\n\`\`\``, 'i')
+      
+      const cssMatch = content.match(pageCssRegex)
+      const jsMatch = content.match(pageJsRegex)
+
+      const page: Partial<Page> = {
+        slug,
+        name: this.slugToName(slug),
+        title: this.slugToTitle(slug),
+        html,
+        css: cssMatch ? cssMatch[1].trim() : '',
+        javascript: jsMatch ? jsMatch[1].trim() : '',
+        isHomePage: slug === 'index' || slug === 'home'
+      }
+
+      response.pages!.push(page as Page)
+    }
+
+    // Extract explanation
+    const explanation = content
+      .replace(/```[\s\S]*?```/g, '')
+      .trim()
+    
+    if (explanation) {
+      response.explanation = explanation
+    }
+
+    return response
+  }
+
+  private slugToName(slug: string): string {
+    const nameMap: Record<string, string> = {
+      'index': 'Home',
+      'home': 'Home',
+      'about': 'Chi Siamo',
+      'about-us': 'Chi Siamo',
+      'contact': 'Contatti',
+      'contacts': 'Contatti',
+      'services': 'Servizi',
+      'products': 'Prodotti',
+      'blog': 'Blog',
+      'news': 'News',
+      'portfolio': 'Portfolio',
+      'gallery': 'Galleria',
+      'team': 'Il Team',
+      'pricing': 'Prezzi',
+      'faq': 'FAQ'
+    }
+
+    if (nameMap[slug.toLowerCase()]) {
+      return nameMap[slug.toLowerCase()]
+    }
+
+    // Convert slug to title case
+    return slug
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+  }
+
+  private slugToTitle(slug: string): string {
+    const titleMap: Record<string, string> = {
+      'index': 'Pagina Principale',
+      'home': 'Pagina Principale',
+      'about': 'Scopri Chi Siamo',
+      'about-us': 'Scopri Chi Siamo',
+      'contact': 'Contattaci',
+      'contacts': 'I Nostri Contatti',
+      'services': 'I Nostri Servizi',
+      'products': 'I Nostri Prodotti',
+      'blog': 'Il Nostro Blog',
+      'news': 'Ultime News',
+      'portfolio': 'Il Nostro Portfolio',
+      'gallery': 'Galleria Immagini',
+      'team': 'Conosci il Team',
+      'pricing': 'I Nostri Prezzi',
+      'faq': 'Domande Frequenti'
+    }
+
+    if (titleMap[slug.toLowerCase()]) {
+      return titleMap[slug.toLowerCase()]
+    }
+
+    return this.slugToName(slug)
+  }
+
   async generateCode(request: AIGenerationRequest): Promise<AIGenerationResponse> {
     const systemPrompt = this.createSystemPrompt(request.type)
     
@@ -179,6 +347,12 @@ Se la modifica richiede nuove funzionalità, fornisci HTML, CSS e JavaScript.`
     switch (request.type) {
       case 'webpage':
         return `Crea una pagina web completa basata su questa richiesta: "${request.prompt}"`
+      
+      case 'multi-page-site':
+        return `Crea un sito web multi-pagina completo basato su questa richiesta: "${request.prompt}"`
+      
+      case 'new-page':
+        return `Crea una nuova pagina per il sito esistente: "${request.prompt}"`
       
       case 'page-edit':
         return `Modifica la pagina web esistente applicando questa modifica: "${request.prompt}"`
